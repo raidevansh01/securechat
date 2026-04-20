@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureChat — Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="auth-page">
+
+<div class="auth-bg">
+  <div class="auth-blob blob1"></div>
+  <div class="auth-blob blob2"></div>
+</div>
+
+<div class="auth-card">
+  <div class="auth-logo">
+    <div class="logo-icon">&#128274;</div>
+    <h1 class="logo-name">SecureChat</h1>
+    <p class="logo-sub">End-to-end encrypted messaging</p>
+  </div>
+
+  <form id="loginForm" class="auth-form" onsubmit="doLogin(event)">
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" autocomplete="username" placeholder="your username" required>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required>
+    </div>
+    <div id="err" class="error-msg" style="display:none"></div>
+    <button type="submit" class="btn-primary" id="submitBtn">Sign in</button>
+  </form>
+
+  <p class="auth-switch">New here? <a href="/register">Create an account</a></p>
+</div>
+
+<script src="/static/js/crypto.js"></script>
+<script>
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  const err = document.getElementById('err');
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  try {
+    const res = await fetch('/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      // Store the password (to be used as the unwrapping key)
+      // and the wrapped private key locally
+      sessionStorage.setItem('temp_pwd', password);
+      sessionStorage.setItem('wrapped_pk', data.private_key_enc);
+      window.location.href = '/chat';
+    } else {
+      err.textContent = data.error || 'Login failed';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    }
+  } catch {
+    err.textContent = 'Network error. Try again.';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+}
+</script>
+</body>
+</html>

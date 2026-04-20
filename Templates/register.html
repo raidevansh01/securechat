@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureChat — Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="auth-page">
+
+<div class="auth-bg">
+  <div class="auth-blob blob1"></div>
+  <div class="auth-blob blob2"></div>
+</div>
+
+<div class="auth-card">
+  <div class="auth-logo">
+    <div class="logo-icon">&#128274;</div>
+    <h1 class="logo-name">SecureChat</h1>
+    <p class="logo-sub">Create your encrypted account</p>
+  </div>
+
+  <form id="regForm" class="auth-form" onsubmit="doRegister(event)">
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" autocomplete="username" placeholder="choose a username" required minlength="3">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="new-password" placeholder="at least 6 characters" required minlength="6">
+    </div>
+    <div id="err" class="error-msg" style="display:none"></div>
+    <div id="info" class="info-msg" style="display:none"></div>
+    <button type="submit" class="btn-primary" id="submitBtn">Create account</button>
+  </form>
+
+  <p class="auth-note">&#128274; Your RSA key pair is generated on the server and your private key is encrypted with your password. The server never stores your plaintext password or readable messages.</p>
+  <p class="auth-switch">Already have an account? <a href="/login">Sign in</a></p>
+</div>
+
+<script src="/static/js/crypto.js"></script>
+<script>
+async function doRegister(e) {
+  e.preventDefault();
+  const btn  = document.getElementById('submitBtn');
+  const err  = document.getElementById('err');
+  const info = document.getElementById('info');
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+
+  err.style.display = 'none';
+  info.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Generating keys…';
+
+  try {
+    // 1. Generate RSA Key Pair locally
+    const keyPair = await generateKeyPair();
+    const public_key_pem = await exportPublicKey(keyPair.publicKey);
+    
+    // 2. Wrap Private Key with password
+    const private_key_enc = await wrapPrivateKey(keyPair.privateKey, password);
+
+    // 3. Send to server
+    const res = await fetch('/register', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        username,
+        password,
+        public_key: public_key_pem,
+        private_key_enc: private_key_enc
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      info.textContent = 'Account created! Redirecting to login…';
+      info.style.display = 'block';
+      setTimeout(() => window.location.href = '/login', 1200);
+    } else {
+      err.textContent = data.error || 'Registration failed';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Create account';
+    }
+  } catch (e) {
+    console.error(e);
+    err.textContent = 'Error generating keys or network error.';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Create account';
+  }
+}
+</script>
+</body>
+</html>

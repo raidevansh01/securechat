@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureChat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="chat-page">
+
+<!-- ── Sidebar ─────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <span class="logo-icon-sm">&#128274;</span>
+      <span class="logo-text-sm">SecureChat</span>
+    </div>
+    <div class="me-badge">{{ username }}</div>
+  </div>
+
+  <div class="sidebar-search">
+    <input type="text" id="searchInput" placeholder="Search users…" oninput="filterUsers(this.value)">
+  </div>
+
+  <div class="users-label">Conversations</div>
+  <ul class="user-list" id="userList">
+    <!-- populated by JS -->
+  </ul>
+
+  <div class="sidebar-footer">
+    <a href="/logout" class="logout-btn">&#x2190; Sign out</a>
+  </div>
+</aside>
+
+<!-- ── Chat Area ───────────────────────────────────────────── -->
+<main class="chat-main" id="chatMain">
+  <div class="chat-empty" id="chatEmpty">
+    <div class="empty-icon">&#128274;</div>
+    <p class="empty-title">Select a conversation</p>
+    <p class="empty-sub">Your messages are end-to-end encrypted.<br>Nobody except you and your contact can read them.</p>
+  </div>
+
+  <div class="chat-window" id="chatWindow" style="display:none">
+    <!-- header -->
+    <div class="chat-header">
+      <div class="chat-header-avatar" id="chatAvatar">?</div>
+      <div>
+        <div class="chat-header-name" id="chatName">—</div>
+        <div class="chat-header-status">&#128274; End-to-end encrypted</div>
+      </div>
+    </div>
+
+    <!-- messages -->
+    <div class="messages-area" id="messagesArea">
+      <div class="loading-msgs" id="loadingMsgs" style="display:none">Loading…</div>
+    </div>
+
+    <!-- input -->
+    <div class="chat-input-row">
+      <textarea id="msgInput" class="msg-input" placeholder="Type a message…" rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" onclick="sendMessage()" title="Send">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+<script>
+  const ME = "{{ username }}";
+</script>
+<script src="/static/js/crypto.js"></script>
+<script src="/static/js/chat.js"></script>
+</body>
+</html>
