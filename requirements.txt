@@ -3,4 +3,5 @@ flask-sqlalchemy==3.1.1
 flask-socketio==5.3.6
 pycryptodome==3.20.0
 gunicorn==22.0.0
-eventlet==0.36.1
+gevent==24.2.1
+gevent-websocket==0.10.1
