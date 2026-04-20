@@ -13,7 +13,11 @@ from flask_socketio import SocketIO, emit, join_room
 # -- App setup --
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///securechat.db')
+
+# Fix for Render/Production: Use an absolute path for SQLite if no DATABASE_URL is provided
+basedir = os.path.abspath(os.path.dirname(__file__))
+default_db = 'sqlite:///' + os.path.join(basedir, 'securechat.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', default_db)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -31,8 +35,8 @@ class Message(db.Model):
     id                     = db.Column(db.Integer, primary_key=True)
     sender                 = db.Column(db.String(80), nullable=False)
     recipient              = db.Column(db.String(80), nullable=False)
-    enc_session_key        = db.Column(db.Text, nullable=False) # for recipient
-    sender_enc_session_key = db.Column(db.Text, nullable=True)  # for sender
+    enc_session_key        = db.Column(db.Text, nullable=False) 
+    sender_enc_session_key = db.Column(db.Text, nullable=True)  
     nonce                  = db.Column(db.Text, nullable=False)
     tag                    = db.Column(db.Text, nullable=False)
     ciphertext             = db.Column(db.Text, nullable=False)
@@ -145,7 +149,6 @@ def api_send():
         'timestamp': msg.timestamp.isoformat()
     }, room=recipient)
     
-    # Also emit to sender so their other tabs sync
     socketio.emit('new_message', {
         'id':        msg.id,
         'sender':    msg.sender,
@@ -169,8 +172,6 @@ def api_messages(contact):
     
     result = []
     for m in msgs:
-        # If I am the recipient, I use enc_session_key
-        # If I am the sender, I use sender_enc_session_key
         key_to_use = m.enc_session_key if m.recipient == me else m.sender_enc_session_key
         result.append({
             'id':              m.id,
@@ -190,9 +191,12 @@ def on_join(data):
     if room:
         join_room(room)
 
+# -- Initialize Database --
+# This ensures tables are created when Gunicorn imports the app
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     port = int(os.environ.get('PORT', 5010))
     print(f"Server starting on port {port}...")
     socketio.run(app, host='0.0.0.0', port=port, debug=True, use_reloader=False)
